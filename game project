@@ -184,3 +184,52 @@ SDL_Renderer* Game::getRenderer()
     return renderer;
 }
 //part4
+
+#ifndef SNAKE_H
+#define SNAKE_H
+
+#include <SDL.h>
+#include <vector>
+
+using namespace std;
+
+struct SnakePart
+{
+    int x;
+    int y;
+};
+
+class Snake
+{
+private:
+
+    vector<SnakePart> body;
+
+    int direction;
+
+    int growCount;
+
+public:
+
+    Snake();
+
+    void reset();
+
+    void input(SDL_Event event);
+
+    void move();
+
+    void grow();
+
+    void draw(SDL_Renderer* renderer);
+
+    bool checkCollision();
+
+    int getHeadX();
+
+    int getHeadY();
+};
+
+#endif
+
+//part5
