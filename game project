@@ -1,1 +1,62 @@
-task 201
+//task 201
+#include "Game.h"
+
+int main(int argc, char* argv[])
+{
+    Game game;
+
+    if(game.init()==false)
+    {
+        return 0;
+    }
+
+    game.run();
+
+    game.close();
+
+    return 0;
+}
+
+#ifndef GAME_H
+#define GAME_H
+
+#include <SDL.h>
+#include <vector>
+
+#include "Snake.h"
+#include "Food.h"
+
+class Game
+{
+private:
+
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+
+    bool running;
+
+    Snake snake;
+    Food food;
+
+    int score;
+
+public:
+
+    Game();
+
+    bool init();
+
+    void run();
+
+    void handleInput();
+
+    void update();
+
+    void render();
+
+    void close();
+
+    SDL_Renderer* getRenderer();
+};
+
+#endif
