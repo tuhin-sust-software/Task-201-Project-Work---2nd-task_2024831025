@@ -1,0 +1,211 @@
+// snake.cpp
+// Simple Snake game using SDL2 - beginner friendly
+
+#include <SDL.h>
+#include <cstdlib>
+#include <ctime>
+#include <deque>
+#include <string>
+
+const int WINDOW_W = 640;
+const int WINDOW_H = 480;
+const int CELL_SIZE = 20;
+const int COLS = WINDOW_W / CELL_SIZE;
+const int ROWS = WINDOW_H / CELL_SIZE;
+const int FPS = 10; // snake speed (frames per second)
+
+enum Direction { UP, DOWN, LEFT, RIGHT };
+
+struct Point { int x, y; };
+
+class Snake {
+public:
+    Snake() {
+        body.clear();
+        body.push_back({COLS/2, ROWS/2});
+        dir = RIGHT;
+        growFlag = false;
+    }
+    void setDir(Direction d) {
+        // Prevent reversing directly
+        if ((dir == LEFT && d == RIGHT) || (dir == RIGHT && d == LEFT) ||
+            (dir == UP && d == DOWN) || (dir == DOWN && d == UP)) return;
+        dir = d;
+    }
+    void move() {
+        Point head = body.front();
+        Point next = head;
+        if (dir == LEFT) next.x--;
+        if (dir == RIGHT) next.x++;
+        if (dir == UP) next.y--;
+        if (dir == DOWN) next.y++;
+        body.push_front(next);
+        if (!growFlag) body.pop_back();
+        else growFlag = false;
+    }
+    void grow() { growFlag = true; }
+    bool hitsSelf() const {
+        const Point &head = body.front();
+        for (size_t i = 1; i < body.size(); ++i)
+            if (body[i].x == head.x && body[i].y == head.y) return true;
+        return false;
+    }
+    const Point& head() const { return body.front(); }
+    const std::deque<Point>& parts() const { return body; }
+    void reset() {
+        body.clear();
+        body.push_back({COLS/2, ROWS/2});
+        dir = RIGHT;
+        growFlag = false;
+    }
+private:
+    std::deque<Point> body;
+    Direction dir;
+    bool growFlag;
+};
+
+Point randomFood(const Snake &snake) {
+    Point p;
+    bool collide;
+    do {
+        collide = false;
+        p.x = rand() % COLS;
+        p.y = rand() % ROWS;
+        for (auto &part : snake.parts())
+            if (part.x == p.x && part.y == p.y) { collide = true; break; }
+    } while (collide);
+    return p;
+}
+
+int main(int argc, char* argv[]) {
+    srand((unsigned)time(nullptr));
+
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) return 1;
+
+    SDL_Window* window = SDL_CreateWindow("Simple Snake",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        WINDOW_W, WINDOW_H, 0);
+    if (!window) { SDL_Quit(); return 1; }
+
+    SDL_Renderer* ren = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!ren) { SDL_DestroyWindow(window); SDL_Quit(); return 1; }
+
+    bool running = true;
+    bool gameOver = false;
+    Snake snake;
+    Point food = randomFood(snake);
+    int score = 0;
+    Uint32 tickDelay = 1000 / FPS;
+    Uint32 lastTick = SDL_GetTicks();
+
+    while (running) {
+        SDL_Event e;
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) running = false;
+            if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_ESCAPE: running = false; break;
+                    case SDLK_UP:    snake.setDir(UP); break;
+                    case SDLK_DOWN:  snake.setDir(DOWN); break;
+                    case SDLK_LEFT:  snake.setDir(LEFT); break;
+                    case SDLK_RIGHT: snake.setDir(RIGHT); break;
+                    case SDLK_r:
+                        if (gameOver) { gameOver = false; score = 0; snake.reset(); food = randomFood(snake); }
+                        break;
+                }
+            }
+        }
+
+        Uint32 now = SDL_GetTicks();
+        if (!gameOver && now - lastTick >= tickDelay) {
+            lastTick = now;
+            snake.move();
+
+            // Check wall collisions
+            Point h = snake.head();
+            if (h.x < 0 || h.x >= COLS || h.y < 0 || h.y >= ROWS) {
+                gameOver = true;
+            }
+            // Check self collision
+            if (snake.hitsSelf()) gameOver = true;
+
+            // Check food collision
+            if (!gameOver && h.x == food.x && h.y == food.y) {
+                snake.grow();
+                score += 10;
+                food = randomFood(snake);
+            }
+        }
+
+        // Render
+        SDL_SetRenderDrawColor(ren, 30, 30, 30, 255); // background
+        SDL_RenderClear(ren);
+
+        // Draw grid (optional light lines)
+        SDL_SetRenderDrawColor(ren, 40, 40, 40, 255);
+        for (int i = 0; i <= COLS; ++i) {
+            SDL_RenderDrawLine(ren, i * CELL_SIZE, 0, i * CELL_SIZE, WINDOW_H);
+        }
+        for (int i = 0; i <= ROWS; ++i) {
+            SDL_RenderDrawLine(ren, 0, i * CELL_SIZE, WINDOW_W, i * CELL_SIZE);
+        }
+
+        // Draw food
+        SDL_Rect fr = { food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+        SDL_SetRenderDrawColor(ren, 200, 50, 50, 255);
+        SDL_RenderFillRect(ren, &fr);
+
+        // Draw snake
+        bool first = true;
+        for (auto &p : snake.parts()) {
+            SDL_Rect r = { p.x * CELL_SIZE, p.y * CELL_SIZE, CELL_SIZE, CELL_SIZE };
+            if (first) { SDL_SetRenderDrawColor(ren, 50, 200, 50, 255); first = false; } // head
+            else SDL_SetRenderDrawColor(ren, 30, 150, 30, 255);
+            SDL_RenderFillRect(ren, &r);
+        }
+
+        // Draw score (simple blocks representing digits)
+        // For simplicity: draw score as small rectangles in top-left
+        int sx = 6, sy = 6, sw = 6, sh = 10;
+        int tmp = score;
+        if (tmp == 0) {
+            SDL_SetRenderDrawColor(ren, 220, 220, 220, 255);
+            SDL_Rect r = { sx, sy, sw, sh }; SDL_RenderFillRect(ren, &r);
+        } else {
+            int pos = 0;
+            while (tmp > 0) {
+                if (tmp % 2) SDL_SetRenderDrawColor(ren, 220, 220, 220, 255);
+                else SDL_SetRenderDrawColor(ren, 120, 120, 120, 255);
+                SDL_Rect r = { sx + pos * (sw + 4), sy, sw, sh }; SDL_RenderFillRect(ren, &r);
+                tmp /= 2; pos++;
+            }
+        }
+
+        // Game over overlay
+        if (gameOver) {
+            SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(ren, 0, 0, 0, 160);
+            SDL_Rect overlay = {0, 0, WINDOW_W, WINDOW_H};
+            SDL_RenderFillRect(ren, &overlay);
+            // simple text replacement: draw a white rectangle as "message" area
+            SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
+            SDL_Rect box = { WINDOW_W/2 - 140, WINDOW_H/2 - 40, 280, 80 };
+            SDL_RenderFillRect(ren, &box);
+            // We can't render fonts without SDL_ttf; instead draw two small bars to hint message
+            SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+            SDL_Rect b1 = { WINDOW_W/2 - 120, WINDOW_H/2 - 10, 240, 8 };
+            SDL_Rect b2 = { WINDOW_W/2 - 120, WINDOW_H/2 + 10, 240, 8 };
+            SDL_RenderFillRect(ren, &b1);
+            SDL_RenderFillRect(ren, &b2);
+            // (Press R to restart) — user sees visual indication; real text needs SDL_ttf
+        }
+
+        SDL_RenderPresent(ren);
+        SDL_Delay(8); // small delay to reduce CPU usage
+    }
+
+    SDL_DestroyRenderer(ren);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
