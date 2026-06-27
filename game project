@@ -85,3 +85,28 @@ int main(int argc, char* argv[]) {
     bool isRunning = true;
     bool isGameOver = false;
     SDL_Event event;
+
+    while (isRunning) {
+       
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                isRunning = false;
+            }
+        
+            else if (event.type == SDL_KEYDOWN && !isGameOver) {
+                switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        if (snake.dirY != BLOCK_SIZE) { snake.dirX = 0; snake.dirY = -BLOCK_SIZE; }
+                        break;
+                    case SDLK_DOWN:
+                        if (snake.dirY != -BLOCK_SIZE) { snake.dirX = 0; snake.dirY = BLOCK_SIZE; }
+                        break;
+                    case SDLK_LEFT:
+                        if (snake.dirX != BLOCK_SIZE) { snake.dirX = -BLOCK_SIZE; snake.dirY = 0; }
+                        break;
+                    case SDLK_RIGHT:
+                        if (snake.dirX != -BLOCK_SIZE) { snake.dirX = BLOCK_SIZE; snake.dirY = 0; }
+                        break;
+                }
+            }
+        }
