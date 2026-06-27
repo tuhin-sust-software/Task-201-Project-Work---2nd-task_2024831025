@@ -228,3 +228,38 @@ int main(int argc, char* argv[]) {
                 SDL_RenderCopy(renderer, goTex, NULL, &goRect);
                 SDL_DestroyTexture(goTex);
             }
+std::string finalScore = "Final Score: " + std::to_string(score);
+            SDL_Texture* fsTex = renderText(finalScore, font, white, renderer);
+            if (fsTex) {
+                SDL_Rect fsRect;
+                SDL_QueryTexture(fsTex, NULL, NULL, &fsRect.w, &fsRect.h);
+                fsRect.x = (WINDOW_WIDTH  - fsRect.w) / 2;
+                fsRect.y = (WINDOW_HEIGHT - fsRect.h) / 2 + 10;
+                SDL_RenderCopy(renderer, fsTex, NULL, &fsRect);
+                SDL_DestroyTexture(fsTex);
+            }
+
+           
+            SDL_Texture* hintTex = renderText("Press R to Restart", font, white, renderer);
+            if (hintTex) {
+                SDL_Rect hintRect;
+                SDL_QueryTexture(hintTex, NULL, NULL, &hintRect.w, &hintRect.h);
+                hintRect.x = (WINDOW_WIDTH  - hintRect.w) / 2;
+                hintRect.y = (WINDOW_HEIGHT - hintRect.h) / 2 + 60;
+                SDL_RenderCopy(renderer, hintTex, NULL, &hintRect);
+                SDL_DestroyTexture(hintTex);
+            }
+        }
+
+        SDL_RenderPresent(renderer);
+    }
+
+   
+    TTF_CloseFont(font);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    TTF_Quit();
+    SDL_Quit();
+
+    return 0;
+}
