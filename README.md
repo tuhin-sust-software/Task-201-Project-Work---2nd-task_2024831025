@@ -152,4 +152,18 @@ int main(int argc, char* argv[]) {
     placeFood();
 
     const Uint32 MOVE_INTERVAL = 150; 
-    Uint32 lastMoveTime = SDL_GetTicks();
+    Uint32 lastMoveTime = SDL_GetTicks(); bool quit = false;
+    SDL_Event e;
+    while (!quit) {
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT)
+                quit = true;
+            if (!gameOver)
+                snake.handleInput(e);
+            if (gameOver && e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_r)
+                snake = Snake();
+                score = 0;
+                gameOver = false;
+                placeFood();
+            }
+        }
