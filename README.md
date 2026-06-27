@@ -90,3 +90,38 @@ private:
     Direction direction;
     Direction nextDirection;
 };
+SDL_Texture* renderText(const std::string &message, TTF_Font* font,
+                        SDL_Color color, SDL_Renderer* renderer) {
+    SDL_Surface* surf = TTF_RenderText_Blended(font, message.c_str(), color);
+    if (!surf) return nullptr;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surf);
+    SDL_FreeSurface(surf);
+    return texture;
+}
+
+
+int main(int argc, char* argv[]) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        SDL_Log("SDL_Init failed: %s", SDL_GetError());
+        return 1;
+    }
+    if (TTF_Init() == -1) {
+        SDL_Log("TTF_Init failed: %s", TTF_GetError());
+        return 1;
+    }
+    SDL_Window* window = SDL_CreateWindow("Snake Game",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          WINDOW_WIDTH, WINDOW_HEIGHT,
+                                          SDL_WINDOW_SHOWN);
+    if (!window) {
+        SDL_Log("Window creation failed: %s", SDL_GetError());
+        return 1;
+    }
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1,
+                                                SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        SDL_Log("Renderer creation failed: %s", SDL_GetError());
+        return 1;
+    }
+
